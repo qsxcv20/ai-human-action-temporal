@@ -1,0 +1,44 @@
+# requirements.txt — pip 用户的快速起步清单
+#
+# ⚠️ 本项目已切到 uv 模式，完整依赖以 pyproject.toml + uv.lock 为准，
+#    本文件仅供 pip 用户快速起步，不保证完整。
+#    推荐用法（详见 ../UV_SETUP.md）：
+#        cd yoloe && uv sync
+#
+# 用法：必须在 yoloe/ 目录下执行（下面的 -e third_party/... 是相对路径）
+#        pip install -r requirements.txt
+#
+# 关键版本钉死的原因：
+#   huggingface-hub==0.25.2  gradio 4.42 用的 HfFolder 在 hub 0.26 已删除
+#   transformers==4.48.3     4.49+ 要求 huggingface-hub>=0.26，与上一条冲突，4.48.3 是兼容的最高版本
+#   lap==0.5.14              ByteTrack 官方实现依赖
+#   timm==0.9.5              YOLOE 上游依赖
+#   open_clip_torch==2.32.0  YOLOE 上游依赖
+#   pycocotools==2.0.10      lvis 运行时依赖，缺失会导致 import lvis 直接失败
+#   audioop-lts==0.2.2       Python 3.13 移除了标准库 audioop，pydub -> gradio 链路需要 backport
+
+# 本仓库本体（ultralytics）
+-e .
+
+# 上游随仓库分发的三个本地包
+-e third_party/lvis-api
+-e third_party/ml-mobileclip
+-e third_party/CLIP
+
+# 跟踪 / 上游推理 / Web Demo
+lap==0.5.14
+timm==0.9.5
+open_clip_torch==2.32.0
+gradio==4.42.0
+gradio-image-prompter==0.1.0
+fastapi==0.112.2
+uvicorn==0.54.0
+av==19.0.2
+
+# 数据集 / 音频兼容层
+pycocotools==2.0.10
+audioop-lts==0.2.2
+
+# 零样本动作分类（X-CLIP）
+transformers==4.48.3
+huggingface-hub==0.25.2

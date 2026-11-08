@@ -1,0 +1,36 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# ---------- 虚拟环境 ----------
+yoloe/.venv/
+.venv/
+venv/
+
+# ---------- 上游 YOLOE 仓库的 git 历史 ----------
+# 源码以普通文件形式纳入本仓库；原 .git 目录移到这里保留，
+# 需要恢复时执行：mv yoloe/.git.upstream yoloe/.git
+yoloe/.git.upstream/
+
+# ---------- 模型权重（不入库） ----------
+# 用 UV_SETUP.md 里的命令本地下载：
+#   hf download jameslahm/yoloe yoloe-11s-seg.pt --local-dir yoloe/pretrain
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# ---------- 数据集与运行产物 ----------
+demo/eval/data/
+demo/eval/results/
+demo/out/
+yoloe/logs/
+yoloe/runs/
+
+# ---------- 系统 ----------
+.DS_Store
+Thumbs.db
+desktop.ini

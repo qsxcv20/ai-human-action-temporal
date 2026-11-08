@@ -1,0 +1,46 @@
+# botsort_gmc_ball.yaml — 方案 C：BoT-SORT + 全局运动补偿（sparseOptFlow）
+# 本视频镜头持续下摇 -> 画面里所有静止物体的坐标都在往上飘，
+# ByteTrack 纯 IoU 关联会因为预测框和重新出现的框零重叠而断链。
+# GMC 用光流估计相机运动并把预测框搬到当前帧坐标，抵消这个漂移。
+# 注意：ultralytics 的 with_reid 目前是空实现（ReID 不可用），这里只靠 GMC。
+#
+# match_thresh 的真实语义：
+#   fuse_score=True 时关联距离 = 1 - IoU * conf（ultralytics/trackers/utils/matching.py:134-157），
+#   只有 dist <= match_thresh 才算匹配。match_thresh=0.9 等价于要求 IoU * conf >= 0.1，
+#   并不是「IoU 低至 0.1 仍匹配」——IoU 门槛还随检测分数浮动
+#   （conf=0.9 时 IoU >= 0.12 即可，conf=0.4 时要 IoU >= 0.25）。
+#
+# 与 ultralytics 默认 botsort.yaml 的差异及原因：
+#   参数                  默认            本文件          调整原因
+#   track_high_thresh     0.25            0.15            球被遮挡时检测分数会骤降，要留活路
+#   track_low_thresh      0.10            0.05            严重遮挡的低分框也要能续上 ID
+#   new_track_thresh      0.25            0.15            球重新出现时要能建新轨
+#   track_buffer          30              60              30 帧≈1 秒，球被踢飞后需要更长的记忆
+#   match_thresh          0.80            0.90            放宽的是 1-IoU*conf 距离门槛
+#                                                       （等价 IoU*conf >= 0.1），球快速移动
+#                                                       后重新入画时仍能接上同一个 ID
+#   fuse_score            True            True            保持默认：置信度高的检测优先抢关联
+#   gmc_method            sparseOptFlow   sparseOptFlow   与默认相同，靠 GMC 抵消镜头下摇
+#   proximity_thresh      0.5             0.5             默认；只用于屏蔽 ReID 的 embedding
+#                                                       距离，而 with_reid=False，这里不起作用
+#   appearance_thresh     0.25            0.25            默认；同上，ReID 不可用时无效
+#   with_reid             False           False           ultralytics 的 with_reid 是空实现，
+#                                                       置 True 也拿不到 ReID 特征
+#
+# 低分桶什么时候才生效（BoT-SORT 没有重写 update，沿用
+# ultralytics/trackers/byte_tracker.py:311-317 的阈值语义）：
+#   高分桶 = score >= track_high_thresh，低分桶 = track_low_thresh < score < track_high_thresh，
+#   score <= track_low_thresh 的框直接丢掉。所以 0.15 / 0.05 只有在 --conf 也压到 0.15 以下时
+#   才有意义；用本仓库统一的 --conf 0.25 时所有框都落在高分桶，低分桶恒为空。
+
+tracker_type: botsort
+track_high_thresh: 0.15
+track_low_thresh: 0.05
+new_track_thresh: 0.15
+track_buffer: 60
+match_thresh: 0.9
+fuse_score: True
+gmc_method: sparseOptFlow
+proximity_thresh: 0.5
+appearance_thresh: 0.25
+with_reid: False

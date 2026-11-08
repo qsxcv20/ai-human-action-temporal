@@ -1,0 +1,35 @@
+# bytetrack_ball.yaml — 针对「小球 / 快速运动 / 遮挡」目标的 ByteTrack 参数
+# 用法：python track_demo.py --source ball.mp4 --tracker bytetrack_ball.yaml --conf 0.15
+#
+# match_thresh 的真实语义（先读这段，否则下面的对照表会被误读）：
+#   fuse_score=True 时，ultralytics 用的关联距离不是 1-IoU，而是把检测分数融进去的
+#       dist = 1 - IoU * conf        （ultralytics/trackers/utils/matching.py:134-157）
+#   只有 dist <= match_thresh 才算匹配，所以 match_thresh=0.9 等价于要求
+#       IoU * conf >= 0.1
+#   也就是 IoU 门槛随检测分数浮动：conf=0.9 时 IoU >= 0.12 就能接上，
+#   conf=0.4 时则要 IoU >= 0.25。
+#   「允许 IoU 低至 0.1 仍匹配」的说法不成立——0.1 是 IoU*conf 的乘积门槛，不是 IoU 本身。
+#
+# 与 ultralytics 默认 bytetrack.yaml 的差异及原因：
+#   参数                默认    本文件   调整原因
+#   track_high_thresh   0.25    0.15     球被遮挡时检测分数会骤降，要留活路
+#   track_low_thresh    0.10    0.05     严重遮挡的低分框也要能续上 ID
+#   new_track_thresh    0.25    0.15     球重新出现时要能建新轨
+#   track_buffer        30      60       30 帧≈1 秒，球被踢飞后需要更长的记忆
+#   match_thresh        0.80    0.90     放宽的是 1-IoU*conf 距离门槛（等价 IoU*conf >= 0.1），
+#                                      让球快速移动后重新入画时仍能接上同一个 ID
+#   fuse_score          True    True     保持默认：置信度高的检测优先抢关联
+#
+# 低分桶什么时候才生效（ultralytics/trackers/byte_tracker.py:311-317）：
+#   高分桶 = score >= track_high_thresh，低分桶 = track_low_thresh < score < track_high_thresh，
+#   score <= track_low_thresh 的框直接丢掉。所以 0.15 / 0.05 这两个阈值只有在
+#   传给检测器的 --conf 也压到 0.15 以下时才有意义；
+#   用本仓库统一的 --conf 0.25 时，所有框都落在高分桶，低分桶恒为空。
+
+tracker_type: bytetrack
+track_high_thresh: 0.15
+track_low_thresh: 0.05
+new_track_thresh: 0.15
+track_buffer: 60
+match_thresh: 0.9
+fuse_score: True

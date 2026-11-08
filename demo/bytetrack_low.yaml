@@ -1,0 +1,31 @@
+# bytetrack_low.yaml — 方案 B：降低阈值，让球在遮挡期也能出框
+# 目标：球被大人挡住的那 32 帧里仍保持有检测框 -> ID 不断开
+#
+# match_thresh 的真实语义：
+#   fuse_score=True 时关联距离 = 1 - IoU * conf（ultralytics/trackers/utils/matching.py:134-157），
+#   只有 dist <= match_thresh 才算匹配。match_thresh=0.9 等价于要求 IoU * conf >= 0.1，
+#   并不是「IoU 低至 0.1 仍匹配」——IoU 门槛还随检测分数浮动
+#   （conf=0.9 时 IoU >= 0.12 即可，conf=0.4 时要 IoU >= 0.25）。
+#
+# 与 ultralytics 默认 bytetrack.yaml 的差异及原因：
+#   参数                默认    本文件   调整原因
+#   track_high_thresh   0.25    0.10     目标被遮挡时分数骤降，高分桶门槛要跟着降
+#   track_low_thresh    0.10    0.03     严重遮挡的低分框也要能续上 ID
+#   new_track_thresh    0.25    0.10     遮挡后重新出现时要能建新轨
+#   track_buffer        30      90       球被踢飞/长时间遮挡，需要更长的记忆
+#   match_thresh        0.80    0.90     放宽的是 1-IoU*conf 距离门槛（等价 IoU*conf >= 0.1）
+#   fuse_score          True    True     保持默认：置信度高的检测优先抢关联
+#
+# 用法提醒：这份配置必须配合较低的 --conf（建议 0.05~0.10）。
+#   byte_tracker.py:311-317 里高分桶 = score >= track_high_thresh，
+#   低分桶 = track_low_thresh < score < track_high_thresh，score <= track_low_thresh 直接丢掉。
+#   用本仓库统一的 --conf 0.25 时所有框都进高分桶，0.03 这个低分桶恒为空，
+#   「遮挡期仍出框」的初衷就落空了。
+
+tracker_type: bytetrack
+track_high_thresh: 0.10
+track_low_thresh: 0.03
+new_track_thresh: 0.10
+track_buffer: 90
+match_thresh: 0.9
+fuse_score: True
